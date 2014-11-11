@@ -1,0 +1,26 @@
+{
+    "name": "mremi/composer-completion",
+    "type": "library",
+    "description": "Completes the composer command with some packages",
+    "keywords": ["packagist", "composer", "shell", "completions"],
+    "homepage": "https://github.com/mremi/composer-completion",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Rémi Marseille",
+            "email": "marseille.remi@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.3",
+        "knplabs/packagist-api": "~1.2",
+        "symfony/console": "~2.5",
+        "symfony/filesystem": "~2.5"
+    },
+    "require-dev":{
+        "phpunit/phpunit": "~4.1"
+    },
+    "autoload": {
+        "psr-0": { "Mremi\\ComposerCompletion": "src" }
+    }
+}

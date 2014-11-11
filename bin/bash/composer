@@ -1,0 +1,19 @@
+_composer()
+{
+    local cur prev
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    if [ "${cur}" != "" ]; then
+        if [ "${prev}" == "require" ] || [ "${prev}" == "update" ]; then
+            options=$(__(mremi/composer-completion)__/bin/composer-completion complete:${prev} ${cur});
+            COMPREPLY=($(compgen -W "${options}" -- ${cur}))
+        fi
+    fi
+
+    return 0;
+}
+
+complete -F _composer composer
+COMP_WORDBREAKS=${COMP_WORDBREAKS//:}
