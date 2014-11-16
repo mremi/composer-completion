@@ -13,6 +13,8 @@ namespace Mremi\ComposerCompletion\Tests;
 
 use Mremi\ComposerCompletion\Cache;
 
+use Symfony\Component\Filesystem\Filesystem;
+
 /**
  * Tests the Cache class
  *
@@ -24,6 +26,11 @@ class CacheTest extends \PHPUnit_Framework_TestCase
      * @var \Symfony\Component\Filesystem\Filesystem
      */
     private $filesystem;
+
+    /**
+     * @var string
+     */
+    private $baseDir;
 
     /**
      * @var string
@@ -41,7 +48,8 @@ class CacheTest extends \PHPUnit_Framework_TestCase
     protected function setUp()
     {
         $this->filesystem = $this->getMock('Symfony\Component\Filesystem\Filesystem');
-        $this->directory  = sprintf('%s/composer-completion/tests/cache', sys_get_temp_dir());
+        $this->baseDir    = sprintf('%s/composer-completion', sys_get_temp_dir());
+        $this->directory  = sprintf('%s/tests/cache', $this->baseDir);
         $this->cache      = new Cache($this->filesystem, $this->directory);
     }
 
@@ -50,8 +58,64 @@ class CacheTest extends \PHPUnit_Framework_TestCase
      */
     protected function tearDown()
     {
+        $this->filesystem->remove($this->baseDir);
+
         $this->filesystem = null;
         $this->cache      = null;
+    }
+
+    /**
+     * Tests the find method to retrieve a fresh vendor
+     */
+    public function testFindFreshVendor()
+    {
+        $this->filesystem = new Filesystem;
+        $cache = new Cache($this->filesystem, $this->directory);
+        $cache->write('mremi', 'mremi/database-encoder mremi/url-shortener mremi/url-shortener-bundle');
+
+        $vendors = $cache->find('mremi');
+
+        $this->assertTrue(is_array($vendors));
+        $this->assertCount(1, $vendors);
+        $this->assertEquals(sprintf('%s/252/092/mremi', $this->directory), $vendors[0]);
+
+        touch($vendors[0], time() - 86400);
+        clearstatcache();
+
+        $vendors = $cache->find('mremi');
+
+        $this->assertTrue(is_array($vendors));
+        $this->assertCount(0, $vendors);
+    }
+
+    /**
+     * Tests the find method to retrieve a non-existent vendor
+     */
+    public function testFindNonExistentVendor()
+    {
+        $this->filesystem = new Filesystem;
+        $cache = new Cache($this->filesystem, $this->directory);
+
+        $vendors = $cache->find('mremi');
+
+        $this->assertTrue(is_array($vendors));
+        $this->assertCount(0, $vendors);
+    }
+
+    /**
+     * Tests the find method to retrieve similar vendors
+     */
+    public function testFindSimilarVendors()
+    {
+        $this->filesystem = new Filesystem;
+        $cache = new Cache($this->filesystem, $this->directory);
+        $cache->write('mremi', 'mremi/database-encoder mremi/url-shortener mremi/url-shortener-bundle');
+
+        $vendors = $cache->find('mrem');
+
+        $this->assertTrue(is_array($vendors));
+        $this->assertCount(1, $vendors);
+        $this->assertEquals(sprintf('%s/252/092/mremi', $this->directory), $vendors[0]);
     }
 
     /**
@@ -69,6 +133,34 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($this->cache->isFresh($file));
 
         unlink($file);
+    }
+
+    /**
+     * Tests the write method
+     */
+    public function testWrite()
+    {
+        $this->filesystem = new Filesystem;
+        $cache = new Cache($this->filesystem, $this->directory);
+        $cache->write('mremi', 'mremi/database-encoder mremi/url-shortener mremi/url-shortener-bundle');
+
+        $vendors = $cache->find('mremi');
+
+        $this->assertTrue(is_array($vendors));
+        $this->assertCount(1, $vendors);
+        $this->assertEquals('mremi/database-encoder mremi/url-shortener mremi/url-shortener-bundle ', file_get_contents($vendors[0]));
+
+        $cache->write('mremi', 'mremi/flowdock');
+
+        $vendors = $cache->find('mremi');
+
+        $this->assertEquals('mremi/database-encoder mremi/url-shortener mremi/url-shortener-bundle mremi/flowdock ', file_get_contents($vendors[0]));
+
+        $cache->write('mremi', 'mremi/contact-bundle', false);
+
+        $vendors = $cache->find('mremi');
+
+        $this->assertEquals('mremi/contact-bundle ', file_get_contents($vendors[0]));
     }
 
     /**
