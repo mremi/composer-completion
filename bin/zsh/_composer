@@ -1,0 +1,24 @@
+#compdef composer
+
+_composer () {
+    local cur prev dir cmd
+
+    cur="${words[CURRENT]}"
+    prev="${words[CURRENT-1]}"
+
+    if [ "${cur}" != "" ]; then
+        if [ "${prev}" = "require" ] || [ "${prev}" = "update" ]; then
+            for dir in ${fpath}; do
+                cmd="${dir}/../composer-completion"
+
+                if [ -f ${cmd} ]; then
+                    compadd `${cmd} complete:${prev} ${cur}`
+
+                    break
+                fi
+            done
+        fi
+    fi
+}
+
+compdef _composer composer
